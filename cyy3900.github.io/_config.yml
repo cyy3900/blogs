@@ -70,6 +70,13 @@ time_format: HH:mm:ss
 per_page: 10
 pagination_dir: page
 
+leancloud_counter_security:
+  enable_sync: true
+  app_id: 0czoN8GM1ESddOAmAWhgFuer-gzGzoHsz <<your app id>>
+  app_key: OxOwL09Ik2u04kDPuQhPHlfs <<your app key>>
+  username: <<your username>> # Will be asked while deploying if is left blank
+  password: <<your password>> # Recommmended to be left blank. Will be asked while deploying if is left blank
+
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
