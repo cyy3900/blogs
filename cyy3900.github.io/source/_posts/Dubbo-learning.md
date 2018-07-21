@@ -168,3 +168,54 @@ public class Consumer {
 }
 
 ```
+## 4，Dubbo的负载均衡策略
+
+在集群负载均衡时，Dubbo 提供了多种均衡策略，缺省为 random 随机调用。
+
+Dubbo提供了四种负载均衡策略，同时也允许自定义负载均衡策略。
+
+ - Random LoadBalance
+
+随机，按权重设置随机概率。
+在一个截面上碰撞的概率高，但调用量越大分布越均匀，而且按概率使用权重后也比较均匀，有利于动态调整提供者权重。
+
+ - RoundRobin LoadBalance
+
+轮循，按公约后的权重设置轮循比率。
+存在慢的提供者累积请求的问题，比如：第二台机器很慢，但没挂，当请求调到第二台时就卡在那，久而久之，所有请求都卡在调到第二台上。
+
+ - LeastActive LoadBalance
+
+最少活跃调用数，相同活跃数的随机，活跃数指调用前后计数差。
+使慢的提供者收到更少请求，因为越慢的提供者的调用前后计数差会越大。
+
+ - ConsistentHash LoadBalance
+
+一致性 Hash，相同参数的请求总是发到同一提供者。
+当某一台提供者挂时，原本发往该提供者的请求，基于虚拟节点，平摊到其它提供者，不会引起剧烈变动。
+
+ - 配置
+
+1 服务端服务级别
+<dubbo:service interface="..." loadbalance="roundrobin" />
+2 客户端服务级别
+<dubbo:reference interface="..." loadbalance="roundrobin" />
+3 服务端方法级别
+<dubbo:service interface="...">
+    <dubbo:method name="..." loadbalance="roundrobin"/>
+</dubbo:service>
+4 客户端方法级别
+<dubbo:reference interface="...">
+    <dubbo:method name="..." loadbalance="roundrobin"/>
+</dubbo:reference>
+
+## 5，Dubbo使用的协议
+
+**官方推荐和默认的协议是dubbo。**
+### dubbo协议：dubbo://
+
+Dubbo 缺省协议采用单一长连接和 NIO 异步通讯，适合于小数据量大并发的服务调用，以及服务消费者机器数远大于服务提供者机器数的情况。
+
+反之，Dubbo 缺省协议不适合传送大数据量的服务，比如传文件，传视频等，除非请求量很低。
+
+参考文献：dubbo官方文档https://dubbo.incubator.apache.org/#!/docs/user/preface/background.md?lang=zh-cn
