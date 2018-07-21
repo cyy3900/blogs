@@ -52,5 +52,117 @@ Dubbo是阿里巴巴公司开源的一个高性能优秀的服务框架，使得
  4. 服务消费者，从提供者地址列表中，基于软负载均衡算法，选一台提供者进行调用，如果调用失败，再选另一台调用。
  5. 服务消费者和提供者，在内存中累计调用次数和调用时间，定时每分钟发送一次统计数据到监控中心。
 
+## 3,Dubbo快速搭建第一个例子
+Dubbo 采用全 Spring 配置方式，透明化接入应用，对应用没有任何 API 侵入，只需用 Spring 加载 Dubbo 的配置即可，Dubbo 基于 Spring 的 Schema 扩展进行加载。
+接下来这个例子用zookeeper作为注册中心，zookeeper也是官方推荐的注册中心。
 
+ - 定义服务的接口
 
+``` stylus
+package qfmz.tech.demo;
+
+public interface DemoService {
+    String sayHello(String name);
+}
+
+```
+
+ - 在服务提供方实现接口
+ 
+ 
+
+``` stylus
+package qfmz.tech.demo.provider;
+
+import qfmz.tech.demo.DemoService;
+
+public class DemoServiceImpl implements DemoService {
+    public String sayHello(String name) {
+        return "Hello " + name;
+    }
+}
+```
+
+ - 用 Spring 配置声明暴露服务
+provider.xml
+``` stylus
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:dubbo="http://dubbo.apache.org/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans        http://www.springframework.org/schema/beans/spring-beans-4.3.xsd        http://dubbo.apache.org/schema/dubbo        http://dubbo.apache.org/schema/dubbo/dubbo.xsd">
+
+    <!-- 提供方应用信息，用于计算依赖关系 -->
+    <dubbo:application name="hello-world-app"  />
+
+    <!-- 使用multicast广播注册中心暴露服务地址 -->
+    <dubbo:registry address="zookeeper://127.0.0.1:2181" />
+
+    <!-- 用dubbo协议在20880端口暴露服务 -->
+    <dubbo:protocol name="dubbo" port="20880" />
+
+    <!-- 声明需要暴露的服务接口 -->
+    <dubbo:service interface="qfmz.tech.demo.DemoService" ref="demoService" />
+
+    <!-- 和本地bean一样实现服务 -->
+    <bean id="demoService" class="qfmz.tech.demo.provider.DemoServiceImpl" />
+</beans>
+```
+
+ - 服务提供方
+
+``` stylus
+package qfmz.tech.demo;
+
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+public class Provider {
+    public static void main(String[] args) throws Exception {
+        ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("provider.xml");
+        context.start();
+        System.in.read(); // 按任意键退出
+    }
+}
+
+```
+
+ - 通过 Spring 配置引用远程服务
+
+consumer.xml
+
+``` stylus
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:dubbo="http://dubbo.apache.org/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans        http://www.springframework.org/schema/beans/spring-beans-4.3.xsd        http://dubbo.apache.org/schema/dubbo        http://dubbo.apache.org/schema/dubbo/dubbo.xsd">
+
+    <!-- 消费方应用名，用于计算依赖关系，不是匹配条件，不要与提供方一样 -->
+    <dubbo:application name="consumer-of-helloworld-app"  />
+
+    <!-- 使用multicast广播注册中心暴露发现服务地址 -->
+    <dubbo:registry address="zookeeper://127.0.0.1:2181" />
+
+    <!-- 生成远程服务代理，可以和本地bean一样使用demoService -->
+    <dubbo:reference id="demoService" interface="qfmz.tech.demo.DemoService" />
+</beans>
+```
+
+ - 加载Spring配置，并调用远程服务
+
+``` stylus
+package qfmz.tech.demo;
+
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+public class Consumer {
+    public static void main(String[] args) throws Exception {
+        ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("consumer.xml");
+        context.start();
+        DemoService demoService = (DemoService)context.getBean("demoService"); // 获取远程服务代理
+        String hello = demoService.sayHello("world"); // 执行远程方法
+        System.out.println( hello ); // 显示调用结果
+    }
+}
+
+```
